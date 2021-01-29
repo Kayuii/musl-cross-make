@@ -1,0 +1,122 @@
+From 4a6d815cc09e38b65738a6d8d82ab2882e6d220f Mon Sep 17 00:00:00 2001
+From: Patrick Oppenlander <patrick.oppenlander@gmail.com>
+Date: Thu, 21 Jan 2021 17:07:16 +1100
+Subject: [PATCH] [ELF] Fix program header alloc when first PT_LOAD is not at lowest VMA
+
+Program headers must be allocated in the first PT_LOAD segment, however
+this is not necessarily at the lowest VMA in the program image.
+
+Previously lld would find the lowest VMA in all allocated sections and
+allocate the program headers below that.
+
+This patch changes to searching the first PT_LOAD segment first and
+falls back to the old behaviour if that fails.
+
+The new offset-headers.s test case previously failed with:
+
+ld.lld: error: could not allocate headers
+
+Differential Revision: https://reviews.llvm.org/D95198
+---
+ lld/ELF/LinkerScript.cpp                   | 18 ++++++--
+ lld/test/ELF/linkerscript/offset-headers.s | 53 ++++++++++++++++++++++
+ 2 files changed, 66 insertions(+), 5 deletions(-)
+ create mode 100644 lld/test/ELF/linkerscript/offset-headers.s
+
+diff --git a/lld/ELF/LinkerScript.cpp b/lld/ELF/LinkerScript.cpp
+index 6de2cd65b973..f7f533f12e58 100644
+--- a/lld/ELF/LinkerScript.cpp
++++ b/lld/ELF/LinkerScript.cpp
+@@ -1078,17 +1078,25 @@ static uint64_t computeBase(uint64_t min, bool allocateHeaders) {
+ // enough space for these sections, we'll remove them from the PT_LOAD segment,
+ // and we'll also remove the PT_PHDR segment.
+ void LinkerScript::allocateHeaders(std::vector<PhdrEntry *> &phdrs) {
+-  uint64_t min = std::numeric_limits<uint64_t>::max();
+-  for (OutputSection *sec : outputSections)
+-    if (sec->flags & SHF_ALLOC)
+-      min = std::min<uint64_t>(min, sec->addr);
+-
+   auto it = llvm::find_if(
+       phdrs, [](const PhdrEntry *e) { return e->p_type == PT_LOAD; });
+   if (it == phdrs.end())
+     return;
+   PhdrEntry *firstPTLoad = *it;
+ 
++  uint64_t min = std::numeric_limits<uint64_t>::max();
++
++  // Try to find first section address in first PT_LOAD segment
++  for (OutputSection *sec : outputSections)
++    if (sec->ptLoad == firstPTLoad)
++      min = std::min<uint64_t>(min, sec->addr);
++
++  // If not found, use first allocated section address
++  if (min == std::numeric_limits<uint64_t>::max())
++    for (OutputSection *sec : outputSections)
++      if (sec->flags & SHF_ALLOC)
++        min = std::min<uint64_t>(min, sec->addr);
++
+   bool hasExplicitHeaders =
+       llvm::any_of(phdrsCommands, [](const PhdrsCommand &cmd) {
+         return cmd.hasPhdrs || cmd.hasFilehdr;
+diff --git a/lld/test/ELF/linkerscript/offset-headers.s b/lld/test/ELF/linkerscript/offset-headers.s
+new file mode 100644
+index 000000000000..e3f27e0bbdfd
+--- /dev/null
++++ b/lld/test/ELF/linkerscript/offset-headers.s
+@@ -0,0 +1,53 @@
++# REQUIRES: x86
++# RUN: llvm-mc -filetype=obj -triple=x86_64-unknown-linux %s -o %t
++# RUN: echo "PHDRS { \
++# RUN:           ph1 PT_LOAD FILEHDR PHDRS; \
++# RUN:           ph2 PT_LOAD; } \
++# RUN:       MEMORY { \
++# RUN:           mem1 : ORIGIN = 0x1000000000000000, LENGTH = 64K \
++# RUN:           mem2 : ORIGIN = 0, LENGTH = 128K } \
++# RUN:       SECTIONS { \
++# RUN:           .data : {*(.data*)} >mem2 :ph2 \
++# RUN:           .text ORIGIN(mem1) + SIZEOF_HEADERS : {*(.text*)} >mem1 :ph1 }" > %t.script
++# RUN: ld.lld -o %t1 --script %t.script %t
++# RUN: llvm-readobj -l %t1 | FileCheck %s
++
++# CHECK:     ProgramHeaders [
++# CHECK-NEXT:  ProgramHeader {
++# CHECK-NEXT:    Type: PT_LOAD (0x1)
++# CHECK-NEXT:    Offset: 0x0
++# CHECK-NEXT:    VirtualAddress: 0x1000000000000000
++# CHECK-NEXT:    PhysicalAddress: 0x1000000000000000
++# CHECK-NEXT:    FileSize: 8368
++# CHECK-NEXT:    MemSize: 8368
++# CHECK-NEXT:    Flags [ (0x5)
++# CHECK-NEXT:      PF_R (0x4)
++# CHECK-NEXT:      PF_X (0x1)
++# CHECK-NEXT:    ]
++# CHECK-NEXT:    Alignment: 4096
++# CHECK-NEXT:  }
++# CHECK-NEXT:  ProgramHeader {
++# CHECK-NEXT:    Type: PT_LOAD (0x1)
++# CHECK-NEXT:    Offset: 0x3000
++# CHECK-NEXT:    VirtualAddress: 0x0
++# CHECK-NEXT:    PhysicalAddress: 0x0
++# CHECK-NEXT:    FileSize: 32768
++# CHECK-NEXT:    MemSize: 32768
++# CHECK-NEXT:    Flags [ (0x6)
++# CHECK-NEXT:      PF_R (0x4)
++# CHECK-NEXT:      PF_W (0x2)
++# CHECK-NEXT:    ]
++# CHECK-NEXT:    Alignment: 4096
++# CHECK-NEXT:  }
++# CHECK-NEXT: ]
++
++.global _start
++_start:
++ .rept 0x2000
++ nop
++ .endr
++
++.data
++ .rept 0x2000
++ .long 0
++ .endr
+-- 
+2.30.0
+
