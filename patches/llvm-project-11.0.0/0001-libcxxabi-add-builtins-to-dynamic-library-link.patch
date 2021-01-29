@@ -1,0 +1,30 @@
+From 6f437b42e66c7552c3b92fd1bd46c96ed484dfbf Mon Sep 17 00:00:00 2001
+From: Patrick Oppenlander <patrick.oppenlander@gmail.com>
+Date: Fri, 8 Jan 2021 16:46:37 +1100
+Subject: [PATCH] libcxxabi: add builtins to dynamic library link
+
+Otherwise libc++abi.so fails to link on arm with undefined references to
+some __aeabi_ builtins.
+---
+ libcxxabi/src/CMakeLists.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/libcxxabi/src/CMakeLists.txt b/libcxxabi/src/CMakeLists.txt
+index 42bec421d2be..9dba22ea3d43 100644
+--- a/libcxxabi/src/CMakeLists.txt
++++ b/libcxxabi/src/CMakeLists.txt
+@@ -73,6 +73,11 @@ else()
+   add_library_flags_if(LIBCXXABI_HAS_C_LIB c)
+ endif()
+ 
++if (LIBCXXABI_USE_COMPILER_RT)
++  find_compiler_rt_library(builtins LIBCXXABI_BUILTINS_LIBRARY)
++  list(APPEND LIBCXXABI_SHARED_LIBRARIES "${LIBCXXABI_BUILTINS_LIBRARY}")
++endif ()
++
+ if (LIBCXXABI_USE_LLVM_UNWINDER)
+   # Prefer using the in-tree version of libunwind, either shared or static. If
+   # none are found fall back to using -lunwind.
+-- 
+2.30.0
+
