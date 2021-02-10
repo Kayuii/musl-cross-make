@@ -1,0 +1,53 @@
+From 15c7aef592d615023b32bc97f6f100baa775c40d Mon Sep 17 00:00:00 2001
+From: Patrick Oppenlander <patrick.oppenlander@gmail.com>
+Date: Thu, 11 Feb 2021 11:51:13 +1100
+Subject: [PATCH] compiler-rt: Add support for powerpcspe builds
+
+---
+ compiler-rt/cmake/builtin-config-ix.cmake | 2 +-
+ compiler-rt/cmake/config-ix.cmake         | 2 +-
+ compiler-rt/lib/builtins/CMakeLists.txt   | 2 ++
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/compiler-rt/cmake/builtin-config-ix.cmake b/compiler-rt/cmake/builtin-config-ix.cmake
+index 16d82b127878..e04429eccacd 100644
+--- a/compiler-rt/cmake/builtin-config-ix.cmake
++++ b/compiler-rt/cmake/builtin-config-ix.cmake
+@@ -30,7 +30,7 @@ set(X86 i386)
+ set(X86_64 x86_64)
+ set(MIPS32 mips mipsel)
+ set(MIPS64 mips64 mips64el)
+-set(PPC32 powerpc)
++set(PPC32 powerpc powerpcspe)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+index 3895cb3b8122..8efd52891ef6 100644
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -261,7 +261,7 @@ set(X86 i386)
+ set(X86_64 x86_64)
+ set(MIPS32 mips mipsel)
+ set(MIPS64 mips64 mips64el)
+-set(PPC32 powerpc)
++set(PPC32 powerpc powerpcspe)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+diff --git a/compiler-rt/lib/builtins/CMakeLists.txt b/compiler-rt/lib/builtins/CMakeLists.txt
+index 5fcfa712b76c..ffba51800caa 100644
+--- a/compiler-rt/lib/builtins/CMakeLists.txt
++++ b/compiler-rt/lib/builtins/CMakeLists.txt
+@@ -533,6 +533,8 @@ set(mips64el_SOURCES ${GENERIC_TF_SOURCES}
+ 
+ set(powerpc_SOURCES ${GENERIC_SOURCES})
+ 
++set(powerpcspe_SOURCES ${GENERIC_SOURCES})
++
+ set(powerpc64_SOURCES
+   ppc/divtc3.c
+   ppc/fixtfti.c
+-- 
+2.30.0
+

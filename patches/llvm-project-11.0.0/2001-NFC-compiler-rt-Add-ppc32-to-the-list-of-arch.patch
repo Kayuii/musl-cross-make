@@ -1,0 +1,26 @@
+From 19856c598289a1bd8ac09dc9f6c7a56ae606be16 Mon Sep 17 00:00:00 2001
+From: David Tenty <daltenty@ibm.com>
+Date: Thu, 8 Oct 2020 14:43:19 -0400
+Subject: [PATCH] [NFC][compiler-rt] Add ppc32 to the list of arch
+
+This should have been done when it was added to the symmetrical list in
+the builtins config-ix in D87383, but it was overlooked.
+---
+ compiler-rt/cmake/config-ix.cmake | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+index 23a47f2b8539..12c2996210c4 100644
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -277,6 +277,7 @@ set(X86 i386)
+ set(X86_64 x86_64)
+ set(MIPS32 mips mipsel)
+ set(MIPS64 mips64 mips64el)
++set(PPC32 powerpc)
+ set(PPC64 powerpc64 powerpc64le)
+ set(RISCV32 riscv32)
+ set(RISCV64 riscv64)
+-- 
+2.30.0
+
