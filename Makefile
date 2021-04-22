@@ -47,7 +47,7 @@ endif
 
 ifeq ($(COMPILER),clang)
 
-LLVM_VER ?= 11.0.0
+LLVM_VER ?= 12.0.0
 
 endif
 
@@ -59,7 +59,7 @@ SRC_DIRS = musl-$(MUSL_VER) \
 	$(if $(MPFR_VER),mpfr-$(MPFR_VER)) \
 	$(if $(ISL_VER),isl-$(ISL_VER)) \
 	$(if $(LINUX_VER),linux-$(LINUX_VER)) \
-	$(if $(LLVM_VER),llvm-project-$(LLVM_VER))
+	$(if $(LLVM_VER),llvm-project-$(LLVM_VER).src)
 
 all:
 
@@ -87,7 +87,7 @@ $(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/linux-4*)): SITE = $(LIN
 $(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/linux-3*)): SITE = $(LINUX_SITE)/v3.x
 $(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/linux-2.6*)): SITE = $(LINUX_SITE)/v2.6
 $(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/linux-headers-*)): SITE = $(LINUX_HEADERS_SITE)
-$(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/llvm-project-*)): SITE = $(LLVM_SITE)/llvmorg-$(patsubst llvm-project-%,%,$(basename $(basename $(notdir $@))))
+$(patsubst hashes/%.sha1,$(SOURCES)/%,$(wildcard hashes/llvm-project-*)): SITE = $(LLVM_SITE)/llvmorg-$(patsubst llvm-project-%.src,%,$(basename $(basename $(notdir $@))))
 
 $(SOURCES):
 	mkdir -p $@
@@ -194,7 +194,7 @@ $(BUILD_DIR)/config.mak: | $(BUILD_DIR)
 	$(if $(MPFR_VER),"MPFR_SRCDIR = $(REL_TOP)/mpfr-$(MPFR_VER)") \
 	$(if $(ISL_VER),"ISL_SRCDIR = $(REL_TOP)/isl-$(ISL_VER)") \
 	$(if $(LINUX_VER),"LINUX_SRCDIR = $(REL_TOP)/linux-$(LINUX_VER)") \
-	$(if $(LLVM_VER),"LLVM_SRCDIR = $(REL_TOP)/llvm-project-$(LLVM_VER)") \
+	$(if $(LLVM_VER),"LLVM_SRCDIR = $(REL_TOP)/llvm-project-$(LLVM_VER).src") \
 	$(if $(LLVM_VER),"LLVM_VER = $(LLVM_VER)") \
 	"-include $(REL_TOP)/config.mak"
 
