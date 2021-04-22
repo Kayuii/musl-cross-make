@@ -31,7 +31,7 @@ REL_TOP = ../..$(if $(TARGET),/..)
 
 -include config.mak
 
-MUSL_VER ?= 1.2.1
+MUSL_VER ?= 1.2.2
 LINUX_VER ?= headers-4.19.88
 
 ifeq ($(COMPILER),gcc)
